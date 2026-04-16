@@ -39,6 +39,6 @@ Run from the project root:
 
 ## Optional Manual Review
 
-- Check `build\GameOptimizer\warn-GameOptimizer.txt` for suspicious missing modules
+- Check `build\GameOptimizer\warn-GameOptimizer.txt` for missing modules
 - Verify `dist\GameOptimizer.exe` has a fresh timestamp
 - If sharing the project, copy only the files that belong in source, not the generated folders

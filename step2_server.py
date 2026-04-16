@@ -1,50 +1,4 @@
-"""
-====================================================================
-GAME OPTIMIZER - Step 2: Web Server (connects backend to frontend)
-====================================================================
 
-WHAT THIS FILE DOES:
-  This creates a local web server on your computer. When you open
-  your browser to http://localhost:8080, it shows the Game Optimizer
-  dashboard. The dashboard talks to this server to get process data,
-  kill processes, and manage your whitelist.
-
-CONCEPTS YOU'LL LEARN:
-  - What a web server is and how it works
-  - What an API is (Application Programming Interface)
-  - What HTTP methods (GET, POST, DELETE) mean
-  - How a frontend and backend communicate
-  - What JSON is and why we use it for APIs
-
-KEY CONCEPT - CLIENT / SERVER MODEL:
-  Your BROWSER (the frontend) is the "client" - it asks for things.
-  This PYTHON SCRIPT is the "server" - it responds with data.
-  
-  They communicate using HTTP requests:
-    GET    = "Give me data"        (reading)
-    POST   = "Here's new data"     (creating/updating)
-    DELETE = "Remove this data"    (deleting)
-  
-  The data goes back and forth as JSON (JavaScript Object Notation).
-
-HOW TO RUN:
-  1. Make sure you have Python and psutil installed (see Step 1)
-  2. Install Flask:  pip install flask flask-cors
-  3. Run AS ADMINISTRATOR:  python step2_server.py
-  4. Open your browser to:  http://localhost:8080
-
-WHAT IS FLASK?
-  Flask is a Python "web framework." It handles all the complicated
-  stuff about running a web server (listening for requests, routing
-  URLs, sending responses) so you can focus on your logic.
-  Docs: https://flask.palletsprojects.com
-
-WHAT IS CORS?
-  CORS = Cross-Origin Resource Sharing. Browsers block requests
-  between different domains/ports by default (security feature).
-  flask-cors tells the browser "it's okay, allow these requests."
-====================================================================
-"""
 
 # Import Flask and its helpers
 from flask import Flask, jsonify, request, send_from_directory
@@ -67,9 +21,8 @@ import threading
 import time
 import psutil
 
-# --------------------------------------------------------------
 # CREATE THE APP
-# --------------------------------------------------------------
+
 
 # This creates our web server. '__name__' tells Flask where to
 # find files (templates, static files, etc.)
@@ -79,17 +32,9 @@ app = Flask(__name__, static_folder="frontend", static_url_path="")
 CORS(app)
 
 
-# --------------------------------------------------------------
+
 # API ROUTES - these are the URLs the frontend can call
-# --------------------------------------------------------------
-# 
-# WHAT'S A ROUTE?
-#   A route maps a URL to a Python function. When someone visits
-#   that URL, Flask runs the function and sends back the result.
-#
-#   Think of it like a restaurant menu:
-#     URL (what you order)  ->  Function (kitchen makes it)  ->  Response (your food)
-#
+
 
 @app.route("/")
 def serve_frontend():
@@ -100,37 +45,7 @@ def serve_frontend():
 
 @app.route("/api/processes", methods=["GET"])
 def get_processes():
-    """
-    API ENDPOINT: Get all running processes
-    
-    URL:     GET /api/processes
-    Returns: JSON list of all processes with their info
-    
-    WHAT THE FRONTEND DOES WITH THIS:
-      Displays the process list in a table, color-coded by category.
-      The frontend calls this endpoint every few seconds to keep
-      the display updated.
-    
-    EXAMPLE RESPONSE:
-    {
-      "processes": [
-        {
-          "pid": 1234,
-          "name": "chrome.exe",
-          "ram_mb": 450.2,
-          "cpu_percent": 3.5,
-          "category": "Browser",
-          "safe_to_kill": true
-        },
-        ...
-      ],
-      "summary": {
-        "total": 142,
-        "bloat_count": 8,
-        "bloat_ram_mb": 1240.5
-      }
-    }
-    """
+   
     processes = pm.get_running_processes()
     
     # Build a summary for the dashboard stats
@@ -176,17 +91,7 @@ def kill_process():
 
 @app.route("/api/gamemode", methods=["POST"])
 def toggle_game_mode():
-    """
-    API ENDPOINT: Activate Game Mode (kill all bloat + optimize system)
-    
-    Now does THREE things:
-    1. Kills all non-whitelisted, non-critical processes
-    2. Switches to High Performance power plan
-    3. Clears RAM cache
-    
-    Optional: Set game process to HIGH CPU priority
-    Body: {"activate": true, "game_process": "valorant.exe"}
-    """
+  
     data = request.json
     activate = data.get("activate", False)
     game_process = data.get("game_process", None)
@@ -377,9 +282,7 @@ def save_setup():
         "config": config
     })
 
-# --------------------------------------------------------------
 # START THE SERVER
-# --------------------------------------------------------------
 
 if __name__ == "__main__":
     print("=" * 60)

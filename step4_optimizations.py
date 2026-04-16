@@ -6,23 +6,6 @@ import os
 import time
 
 
-# ==============================================================
-# POWER PLAN MANAGEMENT
-# ==============================================================
-
-# Windows has built-in power plans identified by GUIDs (unique IDs).
-# These are the same on every Windows PC:
-#
-#   Balanced:         Less performance, saves energy
-#   High Performance: Full CPU speed, more power draw
-#   Ultimate:         Even more aggressive than High Performance
-#                     (not available on all PCs)
-#
-# WHY THIS MATTERS FOR GAMING:
-#   On "Balanced" mode, Windows throttles your CPU speed up and
-#   down to save electricity. This causes micro-stutters in games
-#   because the CPU isn't always running at full speed when your
-#   game needs it. "High Performance" keeps the CPU at max speed.
 
 POWER_PLANS = {
     "balanced":         "381b4222-f694-41f0-9685-ff5bb260df2e",
@@ -32,20 +15,7 @@ POWER_PLANS = {
 
 
 def get_current_power_plan():
-    """
-    Get the currently active Windows power plan.
     
-    WHAT subprocess.run DOES:
-      It runs a command as if you typed it in Command Prompt.
-      'powercfg /getactivescheme' is a Windows command that
-      returns which power plan is currently active.
-      
-      'capture_output=True, creationflags=subprocess.CREATE_NO_WINDOW' means we want to read what the
-      command prints (instead of it going to the screen).
-      
-      'text=True' means give us the output as a string
-      (not raw bytes).
-    """
     try:
         result = subprocess.run(
             ["powercfg", "/getactivescheme"],
@@ -54,9 +24,6 @@ def get_current_power_plan():
         )
         output = result.stdout.strip()
         
-        # The output looks like:
-        # "Power Scheme GUID: 381b4222-...  (Balanced)"
-        # We extract the name in parentheses
         if "(" in output:
             name = output.split("(")[-1].rstrip(")")
             guid = output.split(":")[1].split("(")[0].strip()
@@ -136,29 +103,7 @@ def set_power_plan(plan_name):
 
 
 def clear_ram_cache():
-    """
-    Clear standby RAM to free up memory for your game.
     
-    HOW WINDOWS RAM WORKS:
-      Windows doesn't just use RAM for running programs. It also
-      keeps recently used data in a "standby" cache, thinking you
-      might need it again soon. This is smart for general use,
-      but for gaming, that cached data is wasting space your game
-      could use.
-    
-    WHAT WE DO:
-      1. Tell Python to clean up its own unused memory (garbage collection)
-      2. Call Windows API to reduce our own memory footprint
-      3. Clear the system file cache
-      4. Clear the standby list (biggest win for gaming)
-    
-    WHY 32GB HELPS:
-      With 32GB of RAM, Windows might keep 8-12GB in standby cache.
-      Clearing that gives your game access to all of it.
-    
-    REQUIRES:
-      Administrator privileges to clear system caches.
-    """
     results = {
         "success": True,
         "actions": [],

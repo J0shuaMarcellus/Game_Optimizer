@@ -24,9 +24,7 @@ def get_config_path():
 CONFIG_FILE = get_config_path()
 
 
-# ==============================================================
 # HARDWARE PROFILES
-# ==============================================================
 
 HARDWARE_PROFILES = {
     "nvidia": {
@@ -867,9 +865,7 @@ def evaluate_profile(profile_id, profile, signals):
     }
 
 
-# ==============================================================
 # AUTO-DETECTION
-# ==============================================================
 
 def auto_detect_hardware():
     """
@@ -936,9 +932,7 @@ def detect_gpu_brand(gpu_devices=None):
     }
 
 
-# ==============================================================
 # CONFIGURATION MANAGEMENT
-# ==============================================================
 
 def load_hardware_config():
     """

@@ -62,19 +62,7 @@ def get_whitelist_path():
 
 WHITELIST_FILE = get_whitelist_path()
 
-# These are processes that Windows NEEDS to run. Never kill these.
-# If you kill these, your computer could crash or freeze.
-# 
-# HOW I KNOW THESE ARE CRITICAL:
-#   - "svchost.exe"  -> Hosts dozens of Windows services (networking, updates, etc.)
-#   - "csrss.exe"    -> Client/Server Runtime - handles console windows
-#   - "lsass.exe"    -> Local Security Authority - handles your login/passwords
-#   - "explorer.exe" -> Your desktop, taskbar, and file explorer
-#   - "dwm.exe"      -> Desktop Window Manager - renders all your windows
-#   - "System"       -> The Windows kernel itself
-#
-# RULE: If you don't know what a process is, Google it before adding
-#       it here. Never remove things from this list.
+
 
 SYSTEM_CRITICAL = {
     # These are lowercase so we can do case-insensitive matching later
@@ -97,11 +85,11 @@ SYSTEM_CRITICAL = {
     "sihost.exe",
     "taskhostw.exe",
     "spoolsv.exe",
-    "ctfmon.exe",           # Text input services (keyboard)
+    "ctfmon.exe",           #keyboard
     "dllhost.exe",
     "wmiprvse.exe",
     "dashost.exe",
-    "audiodg.exe",          # Windows audio - you want game sound!
+    "audiodg.exe",          # Windows audio - you want game sound
     "searchindexer.exe",
     "securityhealthservice.exe",
     "sgrmbroker.exe",
@@ -110,14 +98,14 @@ SYSTEM_CRITICAL = {
     "textinputhost.exe",
     "runtimebroker.exe",
     "applicationframehost.exe",
-    # Python itself - don't kill the script that's running!
+    # Python itself - don't kill the script that's running
     "python.exe",
     "pythonw.exe",
     "python3.exe",
     "cmd.exe",
     "powershell.exe",
     "windowsterminal.exe",
-    # GPU services (you want your graphics to work!)
+    # GPU services 
     "nvdisplay.container.exe",
     "nvcontainer.exe",
     "amdrsserv.exe",
@@ -125,7 +113,7 @@ SYSTEM_CRITICAL = {
     "atieclxx.exe",
     "atiesrxx.exe",
     "raabortsvc.exe"
-    # GPU drivers - essential for gaming!
+    # GPU drivers 
     "nvdisplay.container.exe",
     "nvcontainer.exe",
     "nvidia web helper.exe",
@@ -135,7 +123,7 @@ SYSTEM_CRITICAL = {
     "atiesrxx.exe",
     "raabortsvc.exe",
     
-    # Audio services - you want game sound!
+    # Audio services 
     "nahimicservice.exe",
     "realtek audio service.exe",
     "ravbg64.exe",
@@ -243,10 +231,10 @@ SYSTEM_CRITICAL = {
     "aac3572dramhal_x86.exe",
     "extensioncardhal_x86.exe",
     
-    # Process Lasso (system optimizer)
+    # Process Lasso 
     "processlasso.exe",
 
-    # Game Optimizer itself - don't kill ourselves!
+    # Game Optimizer itself
     "gameoptimizer.exe",
     "flask.exe",
 
@@ -255,16 +243,7 @@ SYSTEM_CRITICAL = {
     "gameoptimizer.exe",
 }
 
-# Known bloatware / background apps that are safe to kill for gaming.
-# Each entry has a "category" so the frontend can group them nicely.
-#
-# WHAT MAKES SOMETHING "BLOAT" FOR GAMING?
-#   - It uses RAM/CPU but isn't needed for your game
-#   - It syncs files in the background (cloud storage)
-#   - It checks for updates constantly
-#   - It's a communication app you're not actively using
-#
-# You can add more entries here as you discover them!
+
 
 KNOWN_BLOAT = {
     # Format: "process_name.exe": "Category"
@@ -331,26 +310,10 @@ KNOWN_BLOAT = {
 }
 
 
-# ==============================================================
 # FUNCTIONS - reusable blocks of code
-# ==============================================================
 
 def load_whitelist():
-    """
-    Load the user's whitelist from a JSON file.
     
-    WHAT'S A WHITELIST?
-      A whitelist is a list of things you ALLOW. Everything NOT on the
-      list gets blocked (or in our case, killed). This is the opposite
-      of a "blacklist" where you list things to block.
-    
-    WHY JSON?
-      JSON files are human-readable text files. You could open
-      whitelist.json in Notepad and edit it by hand if you wanted.
-    
-    RETURNS:
-      A Python list of process names, like: ["discord.exe", "spotify.exe"]
-    """
     # Check if the file exists first
     if os.path.exists(WHITELIST_FILE):
         # 'with open(...)' automatically closes the file when done
@@ -367,37 +330,14 @@ def load_whitelist():
 
 
 def save_whitelist(whitelist):
-    """
-    Save the whitelist to a JSON file so it persists between runs.
-    
-    WHAT "PERSISTS" MEANS:
-      When you close this program and reopen it, your settings are
-      still there. Without saving to a file, everything would reset.
-    """
+   
     with open(WHITELIST_FILE, "w") as f:  # 'w' = write mode (overwrites file)
         json.dump({"whitelist": whitelist}, f, indent=2)
         # 'indent=2' makes the JSON file look pretty with spacing
 
 
 def get_running_processes():
-    """
-    Scan all running processes and return info about each one.
     
-    HOW THIS WORKS:
-      psutil.process_iter() gives us an "iterator" - basically a list
-      of every running process. For each one, we grab:
-        - pid:  Process ID (unique number Windows assigns)
-        - name: The .exe filename
-        - cpu_percent: How much CPU it's using (0-100%)
-        - memory_info: RAM usage in bytes
-    
-    WHY TRY/EXCEPT?
-      Some system processes won't let us read their info (permission
-      denied). We just skip those - they're system-critical anyway.
-    
-    RETURNS:
-      A list of dictionaries, each representing one process.
-    """
     process_list = []
     
     # Ask psutil for all processes, requesting specific attributes
@@ -409,9 +349,7 @@ def get_running_processes():
             if name is None:
                 continue  # Skip processes with no name (zombies)
             
-            # Get RAM usage in megabytes (MB)
-            # memory_info().rss = "Resident Set Size" = actual RAM being used
-            # We divide by 1024*1024 to convert bytes -> megabytes
+            
             ram_mb = 0
             if info['memory_info']:
                 ram_mb = round(info['memory_info'].rss / (1024 * 1024), 1)
@@ -425,12 +363,7 @@ def get_running_processes():
                 "cpu_percent": info['cpu_percent'] or 0.0,
             }
             
-            # Categorize this process
-            # WHITELIST APPROACH: Everything is killable UNLESS it's
-            # system-critical. This is the aggressive approach -
-            # if it's not essential to Windows, it gets killed
-            # unless you've whitelisted it.
-            # Load hardware-specific critical processes
+           
             try:
                 import step5_hardware_setup as hw
                 hardware_critical = set(hw.get_hardware_critical_processes())
@@ -459,28 +392,7 @@ def get_running_processes():
 
 
 def kill_process_by_name(name, whitelist):
-    """
-    Kill all instances of a process by name.
     
-    WHAT "KILLING A PROCESS" MEANS:
-      We're asking Windows to force-stop the program. It's the same
-      as right-clicking in Task Manager and choosing "End Task."
-      
-      The process gets a "terminate" signal. It stops immediately.
-      Any unsaved work in that app would be lost.
-    
-    SAFETY CHECKS:
-      1. Won't kill system-critical processes (would crash Windows)
-      2. Won't kill whitelisted processes (ones you chose to keep)
-      3. Uses try/except in case the process disappears mid-kill
-    
-    PARAMETERS:
-      name:      The process name to kill (e.g., "chrome.exe")
-      whitelist: List of process names to never kill
-    
-    RETURNS:
-      Dictionary with the result: success, count killed, or error
-    """
     name_lower = name.lower()
     
     # Safety check 1: Is this a system-critical process?
@@ -514,30 +426,7 @@ def kill_process_by_name(name, whitelist):
 
 
 def activate_game_mode(whitelist):
-    """
-    GAME MODE: Kill EVERYTHING except system-critical and whitelisted.
     
-    WHITELIST APPROACH:
-      Instead of only killing known bloat, we kill ANYTHING that
-      isn't system-critical or on your whitelist. This is aggressive
-      but gives you maximum performance.
-    
-      The logic is simple:
-        - System Critical? → NEVER touch it
-        - On your whitelist? → Keep it alive
-        - Anything else? → Kill it
-    
-    WHY THIS IS BETTER FOR GAMING:
-      The old approach only killed apps we recognized. But there
-      are thousands of random apps, updaters, and services that
-      could be eating your RAM. This approach catches ALL of them.
-    
-    WHY THE WHITELIST MATTERS:
-      Since we're killing everything, your whitelist is your safety
-      net. Make sure your game launcher (Steam, Epic, etc.) and any
-      apps you want (Discord, etc.) are on the whitelist BEFORE
-      activating Game Mode.
-    """
     processes = get_running_processes()
     whitelist_lower = [w.lower() for w in whitelist]
     
@@ -580,9 +469,7 @@ def activate_game_mode(whitelist):
     }
 
 
-# ==============================================================
 # MAIN - this runs when you execute the script directly
-# ==============================================================
 
 if __name__ == "__main__":
     """

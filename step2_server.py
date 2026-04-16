@@ -62,6 +62,23 @@ def get_processes():
     })
 
 
+@app.route("/api/analysis", methods=["GET"])
+def get_bottleneck_analysis():
+    """Return a lightweight live bottleneck analysis for the current machine state."""
+    processes = pm.get_running_processes()
+    bloat = [p for p in processes if p["safe_to_kill"]]
+
+    summary = {
+        "total": len(processes),
+        "bloat_count": len(bloat),
+        "bloat_ram_mb": round(sum(p["ram_mb"] for p in bloat), 1),
+        "bloat_cpu_percent": round(sum(p["cpu_percent"] for p in bloat), 1),
+    }
+
+    analysis = opt.analyze_system_bottlenecks(processes, summary)
+    return jsonify(analysis)
+
+
 @app.route("/api/kill", methods=["POST"])
 def kill_process():
     """

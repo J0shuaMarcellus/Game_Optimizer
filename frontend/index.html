@@ -364,6 +364,157 @@ FILE LOCATION:
             display: block;
         }
 
+        .analysis-panel {
+            display: none;
+        }
+
+        .analysis-panel.active {
+            display: block;
+        }
+
+        .analysis-hero {
+            background: linear-gradient(135deg, rgba(59,130,246,0.14), rgba(34,197,94,0.08));
+            border: 1px solid rgba(59,130,246,0.25);
+            border-radius: 12px;
+            padding: 18px;
+            margin-bottom: 18px;
+        }
+
+        .analysis-kicker {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .analysis-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .analysis-copy {
+            font-size: 13px;
+            line-height: 1.6;
+            color: var(--text-secondary);
+        }
+
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 14px;
+            margin-bottom: 18px;
+        }
+
+        .analysis-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px;
+        }
+
+        .analysis-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .analysis-card-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .analysis-card-value {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .analysis-card-score {
+            font-family: var(--font-mono);
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .analysis-card-copy {
+            font-size: 12px;
+            line-height: 1.6;
+            color: var(--text-secondary);
+        }
+
+        .severity-high { color: var(--accent-red); }
+        .severity-medium { color: var(--accent-orange); }
+        .severity-low { color: var(--accent-green); }
+
+        .analysis-columns {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 14px;
+        }
+
+        .analysis-list-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px;
+        }
+
+        .analysis-list-title {
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+        }
+
+        .analysis-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .analysis-list-item {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .analysis-list-name {
+            font-family: var(--font-mono);
+            color: var(--text-primary);
+        }
+
+        .analysis-list-meta {
+            font-family: var(--font-mono);
+            color: var(--text-muted);
+            text-align: right;
+            white-space: nowrap;
+        }
+
+        .recommendation-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .recommendation-item {
+            font-size: 13px;
+            line-height: 1.6;
+            color: var(--text-secondary);
+            padding: 10px 12px;
+            border-radius: 8px;
+            background: rgba(34, 197, 94, 0.07);
+            border: 1px solid rgba(34, 197, 94, 0.16);
+        }
+
         .whitelist-item {
             display: flex;
             justify-content: space-between;
@@ -492,6 +643,11 @@ FILE LOCATION:
             .stats-row {
                 grid-template-columns: repeat(2, 1fr);
             }
+
+            .analysis-grid,
+            .analysis-columns {
+                grid-template-columns: 1fr;
+            }
         }
 
         .note-box {
@@ -567,6 +723,9 @@ FILE LOCATION:
             <button class="tab-btn" id="tab-whitelist" onclick="switchTab('whitelist')">
                 Whitelist
             </button>
+            <button class="tab-btn" id="tab-analysis" onclick="switchTab('analysis')">
+                Bottleneck Analysis
+            </button>
         </div>
 
         <!-- Processes Tab -->
@@ -606,6 +765,38 @@ FILE LOCATION:
             </div>
             <div id="whitelist-list"></div>
         </div>
+
+        <div class="analysis-panel" id="analysis-panel">
+            <div class="analysis-hero">
+                <div class="analysis-kicker">Live Analysis</div>
+                <div class="analysis-title" id="analysis-primary-title">Scanning system pressure...</div>
+                <div class="analysis-copy" id="analysis-primary-copy">
+                    Checking CPU, RAM, drive space, background load, and power settings.
+                </div>
+            </div>
+
+            <div class="analysis-grid" id="analysis-grid">
+                <div class="analysis-card">
+                    <div class="loading">Loading bottleneck analysis...</div>
+                </div>
+            </div>
+
+            <div class="analysis-columns">
+                <div class="analysis-list-card">
+                    <div class="analysis-list-title">Recommendations</div>
+                    <div class="recommendation-list" id="analysis-recommendations">
+                        <div class="loading">Loading recommendations...</div>
+                    </div>
+                </div>
+
+                <div class="analysis-list-card">
+                    <div class="analysis-list-title">Top Background Offenders</div>
+                    <div class="analysis-list" id="analysis-offenders">
+                        <div class="loading">Loading offender list...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!--
@@ -630,6 +821,7 @@ FILE LOCATION:
         // "State" = the data our UI is currently showing.
         let allProcesses = [];
         let whitelist = [];
+        let analysisData = null;
         let gameModeActive = false;
         let searchFilter = "";
 
@@ -677,10 +869,11 @@ FILE LOCATION:
             // Fetch system info, processes, and whitelist in parallel
             // Promise.all runs multiple requests AT THE SAME TIME
             // instead of one after another. Much faster!
-            const [systemData, processData, whitelistData] = await Promise.all([
+            const [systemData, processData, whitelistData, analysisResult] = await Promise.all([
                 api("/api/system"),
                 api("/api/processes"),
                 api("/api/whitelist"),
+                api("/api/analysis"),
             ]);
 
             if (systemData) {
@@ -696,6 +889,11 @@ FILE LOCATION:
             if (whitelistData) {
                 whitelist = whitelistData.whitelist;
                 renderWhitelist();
+            }
+
+            if (analysisResult) {
+                analysisData = analysisResult;
+                renderAnalysis();
             }
 
             // Update connection status
@@ -911,13 +1109,59 @@ FILE LOCATION:
             container.innerHTML = html;
         }
 
+        function renderAnalysis() {
+            const primaryTitle = document.getElementById("analysis-primary-title");
+            const primaryCopy = document.getElementById("analysis-primary-copy");
+            const grid = document.getElementById("analysis-grid");
+            const recommendations = document.getElementById("analysis-recommendations");
+            const offenders = document.getElementById("analysis-offenders");
+
+            if (!analysisData) {
+                primaryTitle.textContent = "Analysis unavailable";
+                primaryCopy.textContent = "Could not load live bottleneck analysis.";
+                return;
+            }
+
+            primaryTitle.textContent = analysisData.primary_bottleneck.label;
+            primaryCopy.textContent = analysisData.primary_bottleneck.summary;
+
+            grid.innerHTML = analysisData.analysis.map(item => `
+                <div class="analysis-card">
+                    <div class="analysis-card-header">
+                        <div class="analysis-card-label">${escapeHtml(item.label)}</div>
+                        <div class="analysis-card-value">${escapeHtml(item.value)}</div>
+                    </div>
+                    <div class="analysis-card-score severity-${escapeHtml(item.severity)}">${Math.round(item.score)}</div>
+                    <div class="analysis-card-copy">${escapeHtml(item.detail)}</div>
+                </div>
+            `).join("");
+
+            recommendations.innerHTML = analysisData.recommendations.map(text => `
+                <div class="recommendation-item">${escapeHtml(text)}</div>
+            `).join("");
+
+            if (!analysisData.top_background_offenders || analysisData.top_background_offenders.length === 0) {
+                offenders.innerHTML = `<div class="loading">No major background offenders right now.</div>`;
+                return;
+            }
+
+            offenders.innerHTML = analysisData.top_background_offenders.map(proc => `
+                <div class="analysis-list-item">
+                    <div class="analysis-list-name">${escapeHtml(proc.name)}</div>
+                    <div class="analysis-list-meta">${escapeHtml(proc.ram_mb + " MB")} | ${escapeHtml(proc.cpu_percent + "% CPU")}</div>
+                </div>
+            `).join("");
+        }
+
         // ---- TAB SWITCHING ----
         function switchTab(tab) {
             document.getElementById("tab-processes").classList.toggle("active", tab === "processes");
             document.getElementById("tab-whitelist").classList.toggle("active", tab === "whitelist");
+            document.getElementById("tab-analysis").classList.toggle("active", tab === "analysis");
             document.getElementById("processes-panel").style.display = 
                 tab === "processes" ? "block" : "none";
             document.getElementById("whitelist-panel").classList.toggle("active", tab === "whitelist");
+            document.getElementById("analysis-panel").classList.toggle("active", tab === "analysis");
         }
 
         // ---- SEARCH FILTERING ----

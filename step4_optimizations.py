@@ -333,6 +333,231 @@ def restore_defaults():
     return results
 
 
+def classify_severity(score):
+    if score >= 80:
+        return "high"
+    if score >= 50:
+        return "medium"
+    return "low"
+
+
+def summarize_pressure(score, high_text, medium_text, low_text):
+    severity = classify_severity(score)
+    if severity == "high":
+        return high_text
+    if severity == "medium":
+        return medium_text
+    return low_text
+
+
+def get_system_drive():
+    return os.environ.get("SystemDrive", "C:")
+
+
+def analyze_system_bottlenecks(processes, summary):
+    """
+    Build a lightweight bottleneck analysis from current system state.
+
+    This does not try to guess exact in-game FPS limits. Instead it answers:
+      - Is the CPU under heavy pressure right now?
+      - Is RAM tight enough to cause paging/stutter?
+      - Is the system drive crowded enough to hurt gaming workloads?
+      - Are background apps a meaningful part of the problem?
+      - Is Windows using a gaming-friendly power plan?
+    """
+    cpu_percent = psutil.cpu_percent(interval=0.4)
+    per_cpu = psutil.cpu_percent(interval=0.1, percpu=True)
+    ram = psutil.virtual_memory()
+    swap = psutil.swap_memory()
+    power_plan = get_current_power_plan()
+
+    system_drive = get_system_drive()
+    try:
+        disk = psutil.disk_usage(system_drive + os.sep)
+    except Exception:
+        disk = None
+
+    cpu_score = max(cpu_percent, sum(1 for core in per_cpu if core >= 85) / max(len(per_cpu), 1) * 100)
+    ram_score = max(
+        ram.percent,
+        100 - min(100, (ram.available / max(ram.total, 1)) * 100),
+        70 if ram.available < 2 * 1024 * 1024 * 1024 else 0,
+    )
+
+    disk_score = 0
+    disk_free_gb = None
+    if disk:
+        disk_free_gb = round(disk.free / (1024 ** 3), 1)
+        disk_score = max(
+            disk.percent,
+            85 if disk_free_gb < 20 else 0,
+            65 if disk_free_gb < 50 else 0,
+        )
+
+    background_score = 0
+    if summary["bloat_count"] >= 12:
+        background_score = max(background_score, 85)
+    elif summary["bloat_count"] >= 6:
+        background_score = max(background_score, 60)
+
+    if summary["bloat_ram_mb"] >= 2500:
+        background_score = max(background_score, 85)
+    elif summary["bloat_ram_mb"] >= 1000:
+        background_score = max(background_score, 60)
+
+    if summary["bloat_cpu_percent"] >= 15:
+        background_score = max(background_score, 80)
+    elif summary["bloat_cpu_percent"] >= 6:
+        background_score = max(background_score, 55)
+
+    power_name = power_plan.get("name", "Unknown").lower()
+    power_score = 20
+    if "balanced" in power_name:
+        power_score = 65
+    elif "power saver" in power_name or "efficiency" in power_name:
+        power_score = 85
+    elif "high performance" in power_name or "ultimate" in power_name:
+        power_score = 15
+
+    analysis_items = [
+        {
+            "id": "cpu",
+            "label": "CPU pressure",
+            "score": round(cpu_score, 1),
+            "severity": classify_severity(cpu_score),
+            "value": f"{round(cpu_percent, 1)}%",
+            "detail": summarize_pressure(
+                cpu_score,
+                "CPU load is already high. Competitive games may stutter during busy scenes.",
+                "CPU load is elevated. Background tasks or a CPU-heavy game could become the limit.",
+                "CPU headroom looks healthy right now.",
+            ),
+        },
+        {
+            "id": "ram",
+            "label": "RAM pressure",
+            "score": round(ram_score, 1),
+            "severity": classify_severity(ram_score),
+            "value": f"{ram.percent}%",
+            "detail": summarize_pressure(
+                ram_score,
+                "RAM is tight. Paging and hitching are likely if a large game launches now.",
+                "RAM usage is moderately high. Heavy browsers or launchers could cause stutter.",
+                "Available memory looks healthy for gaming.",
+            ),
+        },
+        {
+            "id": "disk",
+            "label": "System drive pressure",
+            "score": round(disk_score, 1),
+            "severity": classify_severity(disk_score),
+            "value": f"{disk.percent if disk else '--'}%" if disk else "Unavailable",
+            "detail": summarize_pressure(
+                disk_score,
+                "The system drive is crowded. Shader caches, updates, and pagefile activity may suffer.",
+                "Drive space is getting tighter than ideal for large modern games.",
+                "Drive space looks healthy for normal gaming workloads.",
+            ) if disk else "Disk analysis is unavailable on this system.",
+        },
+        {
+            "id": "background",
+            "label": "Background load",
+            "score": round(background_score, 1),
+            "severity": classify_severity(background_score),
+            "value": f"{summary['bloat_count']} apps",
+            "detail": summarize_pressure(
+                background_score,
+                "Background apps are likely stealing meaningful RAM or CPU from your game.",
+                "You have enough background activity that cleanup could help frametime stability.",
+                "Background process pressure looks light right now.",
+            ),
+        },
+        {
+            "id": "power",
+            "label": "Power plan",
+            "score": round(power_score, 1),
+            "severity": classify_severity(power_score),
+            "value": power_plan.get("name", "Unknown"),
+            "detail": summarize_pressure(
+                power_score,
+                "The current power plan may be limiting gaming performance.",
+                "A more performance-focused power plan could help under heavy load.",
+                "The current power plan already looks gaming-friendly.",
+            ),
+        },
+    ]
+
+    primary = max(analysis_items, key=lambda item: item["score"])
+
+    top_cpu = sorted(processes, key=lambda proc: proc["cpu_percent"], reverse=True)[:5]
+    top_ram = sorted(processes, key=lambda proc: proc["ram_mb"], reverse=True)[:5]
+    offender_map = {}
+    for proc in processes:
+        if not proc["safe_to_kill"] or proc["category"] == "Other":
+            continue
+
+        key = proc["name_lower"]
+        existing = offender_map.get(key)
+        combined_score = proc["ram_mb"] + (proc["cpu_percent"] * 50)
+        if existing is None or combined_score > existing["_combined_score"]:
+            offender_map[key] = {**proc, "_combined_score": combined_score}
+
+    background_offenders = sorted(
+        offender_map.values(),
+        key=lambda proc: proc["_combined_score"],
+        reverse=True,
+    )[:5]
+
+    for proc in background_offenders:
+        proc.pop("_combined_score", None)
+
+    recommendations = []
+    if primary["id"] == "cpu":
+        recommendations.append("Close CPU-heavy background apps before launching a competitive game.")
+    if primary["id"] == "ram":
+        recommendations.append("Free memory before launching large games or browsers-heavy sessions.")
+    if primary["id"] == "disk":
+        recommendations.append("Keep more free space on the system drive for shader cache and paging headroom.")
+    if background_score >= 50:
+        recommendations.append("Game Mode should help by removing background apps using the most RAM or CPU.")
+    if power_score >= 50:
+        recommendations.append("Switch to High Performance power mode before gaming.")
+    if swap.used > 0 and ram.percent >= 80:
+        recommendations.append("Windows is already leaning on virtual memory. That usually points to RAM pressure.")
+
+    if not recommendations:
+        recommendations.append("No major bottleneck stands out right now. The machine looks reasonably ready for gaming.")
+
+    return {
+        "primary_bottleneck": {
+            "id": primary["id"],
+            "label": primary["label"],
+            "severity": primary["severity"],
+            "summary": primary["detail"],
+        },
+        "analysis": analysis_items,
+        "signals": {
+            "cpu_percent": round(cpu_percent, 1),
+            "busy_core_count": sum(1 for core in per_cpu if core >= 85),
+            "logical_cores": len(per_cpu),
+            "ram_percent": ram.percent,
+            "ram_available_gb": round(ram.available / (1024 ** 3), 1),
+            "swap_used_mb": round(swap.used / (1024 ** 2)),
+            "system_drive": system_drive,
+            "disk_percent": disk.percent if disk else None,
+            "disk_free_gb": disk_free_gb,
+            "bloat_count": summary["bloat_count"],
+            "bloat_ram_mb": summary["bloat_ram_mb"],
+            "bloat_cpu_percent": summary["bloat_cpu_percent"],
+            "power_plan": power_plan.get("name", "Unknown"),
+        },
+        "recommendations": recommendations,
+        "top_cpu_processes": top_cpu,
+        "top_ram_processes": top_ram,
+        "top_background_offenders": background_offenders,
+    }
+
+
 # TEST
 
 if __name__ == "__main__":

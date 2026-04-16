@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Optimizer - Setup</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0e17;
+            --bg-secondary: #111827;
+            --bg-card: #1a2233;
+            --bg-card-hover: #1f2b3f;
+            --border: #2a3548;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-green: #22c55e;
+            --accent-blue: #3b82f6;
+            --accent-orange: #f97316;
+            --accent-red: #ef4444;
+            --font-body: 'Space Grotesk', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            padding: 30px 20px;
+        }
+
+        .setup-container {
+            max-width: 700px;
+            width: 100%;
+        }
+
+        .setup-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .setup-header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .setup-header h1 span { color: var(--accent-green); }
+
+        .setup-header p {
+            color: var(--text-secondary);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 28px;
+        }
+
+        .step-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--border);
+            transition: all 0.3s ease;
+        }
+
+        .step-dot.active { background: var(--accent-green); }
+        .step-dot.done { background: var(--accent-blue); }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .section-desc {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+        }
+
+        .detected-banner {
+            background: rgba(34, 197, 94, 0.08);
+            border: 1px solid rgba(34, 197, 94, 0.25);
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            font-size: 13px;
+            color: var(--accent-green);
+        }
+
+        .category-group {
+            margin-bottom: 20px;
+        }
+
+        .category-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            padding-left: 4px;
+        }
+
+        .hardware-option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 6px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .hardware-option:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--accent-blue);
+        }
+
+        .hardware-option.selected {
+            border-color: var(--accent-green);
+            background: rgba(34, 197, 94, 0.06);
+        }
+
+        .hardware-option.detected {
+            border-color: rgba(34, 197, 94, 0.4);
+        }
+
+        .hardware-checkbox {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.15s ease;
+            font-size: 12px;
+        }
+
+        .hardware-option.selected .hardware-checkbox {
+            background: var(--accent-green);
+            border-color: var(--accent-green);
+            color: white;
+        }
+
+        .hardware-info { flex: 1; }
+
+        .hardware-name {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .hardware-desc {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .hardware-meta {
+            font-size: 11px;
+            color: var(--accent-blue);
+            margin-top: 6px;
+            line-height: 1.5;
+        }
+
+        .detected-badge {
+            font-family: var(--font-mono);
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            background: rgba(34, 197, 94, 0.15);
+            color: var(--accent-green);
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 24px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-family: var(--font-body);
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: var(--accent-green);
+            color: var(--bg-primary);
+        }
+
+        .btn-primary:hover {
+            background: #16a34a;
+        }
+
+        .btn-secondary {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-card-hover);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .loading-screen {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent-green);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .success-screen {
+            text-align: center;
+            padding: 60px 20px;
+            display: none;
+        }
+
+        .success-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .process-count {
+            font-family: var(--font-mono);
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--accent-green);
+            margin: 12px 0;
+        }
+
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="setup-container">
+        <!-- Loading Screen -->
+        <div id="loading-screen" class="loading-screen">
+            <div class="spinner"></div>
+            <p style="color: var(--text-secondary);">Scanning your hardware...</p>
+        </div>
+
+        <!-- Setup Screen -->
+        <div id="setup-screen" class="hidden">
+            <div class="setup-header">
+                <h1>Game Optimizer Setup</h1>
+                <p>
+                    Select your hardware so Game Mode knows what to protect.
+                    We auto-detected some of your hardware — confirm the selections
+                    and add anything we missed.
+                </p>
+            </div>
+
+            <div class="step-indicator">
+                <div class="step-dot active"></div>
+                <div class="step-dot"></div>
+            </div>
+
+            <div id="detected-banner" class="detected-banner hidden">
+                Auto-detected hardware is pre-selected below.
+            </div>
+
+            <div id="hardware-list"></div>
+
+            <div class="btn-row">
+                <button class="btn btn-primary" onclick="saveSetup()">
+                    Save &amp; Continue &#8594;
+                </button>
+            </div>
+        </div>
+
+        <!-- Success Screen -->
+        <div id="success-screen" class="success-screen">
+            <h2>Setup Complete!</h2>
+            <div class="process-count" id="process-count">0 processes protected</div>
+            <p style="color: var(--text-secondary); margin-bottom: 24px;">
+                Your hardware services are now protected from Game Mode.
+                You can change these settings anytime from the dashboard.
+            </p>
+            <button class="btn btn-primary" onclick="goToDashboard()" style="max-width: 300px; margin: 0 auto;">
+                Open Dashboard &#8594;
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let detectedData = null;
+        let selectedProfiles = new Set();
+
+        // Categories in display order
+        const CATEGORY_ORDER = [
+            "GPU", "Motherboard", "Security", "Cooling", "Cooling / Peripherals",
+            "Peripherals", "Audio", "VR", "Gaming", "Hardware", "System Tool"
+        ];
+
+        async function api(endpoint, method = "GET", body = null) {
+            try {
+                const options = {
+                    method: method,
+                    headers: { "Content-Type": "application/json" },
+                };
+                if (body) options.body = JSON.stringify(body);
+                const response = await fetch(`http://localhost:8080${endpoint}`, options);
+                return await response.json();
+            } catch (error) {
+                console.error("API Error:", error);
+                return null;
+            }
+        }
+
+        async function startSetup() {
+            // Check if setup is already complete
+            const status = await api("/api/setup/status");
+            if (status && status.setup_complete) {
+                // Already set up, go to dashboard
+                window.location.href = "/";
+                return;
+            }
+
+            // Run hardware detection
+            detectedData = await api("/api/setup/detect");
+            
+            if (!detectedData) {
+                document.getElementById("loading-screen").innerHTML = `
+                    <p style="color: var(--accent-red);">
+                        Could not connect to server. Make sure the app is running.
+                    </p>
+                `;
+                return;
+            }
+
+            // Pre-select detected hardware
+            if (detectedData.detected) {
+                for (const profileId of Object.keys(detectedData.detected)) {
+                    selectedProfiles.add(profileId);
+                }
+            }
+
+            // Always pre-select anti-cheat and Windows Defender
+            selectedProfiles.add("anticheat");
+            selectedProfiles.add("windows_defender");
+
+            // Auto-select GPU based on detection
+            if (detectedData.gpu_info && detectedData.gpu_info.brand !== "unknown") {
+                selectedProfiles.add(detectedData.gpu_info.brand);
+            }
+
+            renderHardwareList();
+
+            // Show setup screen
+            document.getElementById("loading-screen").classList.add("hidden");
+            document.getElementById("setup-screen").classList.remove("hidden");
+
+            if (Object.keys(detectedData.detected).length > 0) {
+                document.getElementById("detected-banner").classList.remove("hidden");
+            }
+        }
+
+        function renderHardwareList() {
+            const container = document.getElementById("hardware-list");
+            
+            // Group profiles by category
+            const allProfiles = {
+                ...detectedData.detected,
+                ...detectedData.not_detected
+            };
+
+            const byCategory = {};
+            for (const [id, profile] of Object.entries(allProfiles)) {
+                const cat = profile.category;
+                if (!byCategory[cat]) byCategory[cat] = [];
+                byCategory[cat].push({ id, ...profile });
+            }
+
+            let html = "";
+            for (const category of CATEGORY_ORDER) {
+                const profiles = byCategory[category];
+                if (!profiles) continue;
+
+                html += `
+                    <div class="category-group">
+                        <div class="category-label">${category}</div>
+                `;
+
+                for (const profile of profiles) {
+                    const isSelected = selectedProfiles.has(profile.id);
+                    const isDetected = detectedData.detected && detectedData.detected[profile.id];
+                    const evidenceText = buildEvidenceText(profile);
+                    
+                    html += `
+                        <div class="hardware-option ${isSelected ? 'selected' : ''} ${isDetected ? 'detected' : ''}"
+                             onclick="toggleProfile('${profile.id}', this)">
+                            <div class="hardware-checkbox">
+                                ${isSelected ? '&#10003;' : ''}
+                            </div>
+                            <div class="hardware-info">
+                                <div class="hardware-name">${escapeHtml(profile.display_name)}</div>
+                                <div class="hardware-desc">${escapeHtml(profile.description)}</div>
+                                ${evidenceText ? `<div class="hardware-meta">${escapeHtml(evidenceText)}</div>` : ""}
+                            </div>
+                            ${isDetected ? `<span class="detected-badge">${escapeHtml(profile.confidence || "Detected")}</span>` : ''}
+                        </div>
+                    `;
+                }
+
+                html += `</div>`;
+            }
+
+            container.innerHTML = html;
+        }
+
+        function buildEvidenceText(profile) {
+            if (!profile.evidence || profile.evidence.length === 0) return "";
+            return profile.evidence.slice(0, 2).join(" | ");
+        }
+
+        function escapeHtml(value) {
+            const div = document.createElement("div");
+            div.textContent = value ?? "";
+            return div.innerHTML;
+        }
+
+        function toggleProfile(profileId, element) {
+            if (selectedProfiles.has(profileId)) {
+                selectedProfiles.delete(profileId);
+                element.classList.remove("selected");
+                element.querySelector(".hardware-checkbox").innerHTML = "";
+            } else {
+                selectedProfiles.add(profileId);
+                element.classList.add("selected");
+                element.querySelector(".hardware-checkbox").innerHTML = "&#10003;";
+            }
+        }
+
+        async function saveSetup() {
+            const result = await api("/api/setup/save", "POST", {
+                selected_profiles: Array.from(selectedProfiles)
+            });
+
+            if (result && result.success) {
+                document.getElementById("setup-screen").classList.add("hidden");
+                document.getElementById("success-screen").style.display = "block";
+                document.getElementById("process-count").textContent = 
+                    result.critical_count + " processes protected";
+
+                // Update step dots
+                const dots = document.querySelectorAll(".step-dot");
+                dots[0].classList.remove("active");
+                dots[0].classList.add("done");
+                dots[1].classList.add("active");
+            }
+        }
+
+        function goToDashboard() {
+            window.location.href = "/";
+        }
+
+        // Start
+        startSetup();
+    </script>
+</body>
+</html>

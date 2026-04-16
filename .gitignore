@@ -1,0 +1,32 @@
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+.venv/
+.venv-build/
+.venv-win/
+venv/
+env/
+
+# Build output
+build/
+dist/
+*.spec.bak
+
+# Local runtime files
+error_log.txt
+hardware_config.json
+whitelist.json
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Test and tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+

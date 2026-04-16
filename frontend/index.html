@@ -1,0 +1,936 @@
+<!--
+====================================================================
+GAME OPTIMIZER - Step 3: Frontend Dashboard
+====================================================================
+
+WHAT THIS FILE DOES:
+  This is the web page that shows up in your browser. It's the 
+  visual interface where you:
+    - See all running processes
+    - Toggle your whitelist
+    - Activate Game Mode
+    - Monitor system resources
+
+CONCEPTS YOU'LL LEARN:
+  - HTML: The structure/skeleton of a web page
+  - CSS:  The styling/appearance (colors, layout, fonts)
+  - JavaScript: The behavior/interactivity (button clicks, data fetching)
+
+HOW HTML, CSS, AND JS WORK TOGETHER:
+  Think of building a house:
+    - HTML = the walls, rooms, and doors (structure)
+    - CSS  = the paint, furniture, and decorations (appearance)
+    - JS   = the electricity, plumbing, and smart home (functionality)
+
+FILE LOCATION:
+  This file goes in: frontend/index.html
+  The Flask server serves it when you visit http://localhost:8080
+====================================================================
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- META TAGS: Tell the browser basic info about this page -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Optimizer</title>
+
+    <!-- Google Fonts - loading a custom font from Google's free library -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!--
+    ============================================================
+    CSS STYLES
+    ============================================================
+    Everything inside <style> tags controls how things LOOK.
+    
+    CSS works with "selectors" that target HTML elements:
+      - .className  = targets elements with class="className"
+      - #idName     = targets the element with id="idName"
+      - tagName     = targets all elements of that tag (e.g., body, h1)
+    -->
+    <style>
+        /* ---- CSS VARIABLES ----
+           These are reusable values. Define once, use everywhere.
+           Change a color here and it updates the entire page.
+           Think of them like "settings" for your theme. */
+        :root {
+            --bg-primary: #0a0e17;
+            --bg-secondary: #111827;
+            --bg-card: #1a2233;
+            --bg-card-hover: #1f2b3f;
+            --border: #2a3548;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-green: #22c55e;
+            --accent-green-dim: #16a34a;
+            --accent-red: #ef4444;
+            --accent-orange: #f97316;
+            --accent-blue: #3b82f6;
+            --accent-purple: #a855f7;
+            --accent-cyan: #06b6d4;
+            --accent-yellow: #eab308;
+            --accent-pink: #ec4899;
+            --font-body: 'Space Grotesk', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        /* ---- RESET & BASE ----
+           Remove default browser styling so everything looks
+           consistent across Chrome, Firefox, Edge, etc. */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            /* border-box means padding is INSIDE the width/height,
+               not added outside. This makes layout way easier. */
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;  /* vh = viewport height (full screen) */
+        }
+
+        /* ---- LAYOUT ---- */
+        .app {
+            max-width: 1100px;
+            margin: 0 auto;     /* Centers the content horizontally */
+            padding: 24px 20px;
+        }
+
+        /* ---- HEADER ---- */
+        .header {
+            display: flex;            /* Flexbox: a layout system */
+            justify-content: space-between;  /* Push items to edges */
+            align-items: center;      /* Vertically center items */
+            margin-bottom: 28px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+        .header h1 span {
+            color: var(--accent-green);
+        }
+
+        .header-status {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* ---- SYSTEM STATS (top gauges) ---- */
+        .stats-row {
+            display: grid;
+            /* CSS Grid: creates a flexible grid layout.
+               'repeat(4, 1fr)' = 4 equal columns.
+               '1fr' means each takes 1 "fraction" of space. */
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        .stat-value {
+            font-family: var(--font-mono);
+            font-size: 26px;
+            font-weight: 700;
+        }
+
+        .stat-sub {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        /* ---- GAME MODE BUTTON ---- */
+        .game-mode-section {
+            margin-bottom: 24px;
+        }
+
+        .game-mode-btn {
+            width: 100%;
+            padding: 16px;
+            border: 2px solid var(--accent-green);
+            border-radius: 10px;
+            background: rgba(34, 197, 94, 0.08);
+            color: var(--accent-green);
+            font-family: var(--font-body);
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            transition: all 0.2s ease;
+            /* 'transition' animates changes smoothly instead of instant */
+        }
+
+        .game-mode-btn:hover {
+            background: rgba(34, 197, 94, 0.15);
+            box-shadow: 0 0 30px rgba(34, 197, 94, 0.15);
+        }
+
+        .game-mode-btn.active {
+            background: var(--accent-green);
+            color: var(--bg-primary);
+        }
+
+        .game-mode-btn.active:hover {
+            background: var(--accent-green-dim);
+        }
+
+        /* ---- FREED RESOURCES BANNER ---- */
+        .freed-banner {
+            display: none;
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 10px;
+            padding: 14px 18px;
+            margin-bottom: 20px;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            color: var(--accent-green);
+        }
+
+        .freed-banner.visible {
+            display: block;
+        }
+
+        /* ---- TABS ---- */
+        .tabs {
+            display: flex;
+            gap: 2px;
+            margin-bottom: 18px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            padding: 3px;
+        }
+
+        .tab-btn {
+            flex: 1;                /* Each tab takes equal space */
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            background: transparent;
+            color: var(--text-muted);
+            font-family: var(--font-body);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .tab-btn.active {
+            background: var(--bg-card);
+            color: var(--text-primary);
+        }
+
+        .tab-btn:hover:not(.active) {
+            color: var(--text-secondary);
+        }
+
+        /* ---- PROCESS TABLE ---- */
+        .process-table {
+            width: 100%;
+            border-collapse: collapse;
+            /* border-collapse makes cell borders merge into one line
+               instead of having double borders */
+        }
+
+        .process-table th {
+            text-align: left;
+            padding: 10px 14px;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border);
+            /* 'sticky' keeps the header visible when scrolling */
+            position: sticky;
+            top: 0;
+            background: var(--bg-primary);
+        }
+
+        .process-table td {
+            padding: 10px 14px;
+            font-size: 13px;
+            border-bottom: 1px solid rgba(42, 53, 72, 0.5);
+        }
+
+        .process-table tr:hover td {
+            background: var(--bg-card-hover);
+        }
+
+        .process-name {
+            font-family: var(--font-mono);
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .process-stat {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        /* Category color badges */
+        .category-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* ---- ACTION BUTTONS ---- */
+        .btn-kill {
+            padding: 4px 12px;
+            border: 1px solid var(--accent-red);
+            border-radius: 5px;
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--accent-red);
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .btn-kill:hover {
+            background: var(--accent-red);
+            color: white;
+        }
+
+        .btn-whitelist {
+            padding: 4px 12px;
+            border: 1px solid var(--accent-blue);
+            border-radius: 5px;
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--accent-blue);
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .btn-whitelist:hover {
+            background: var(--accent-blue);
+            color: white;
+        }
+
+        .btn-whitelist.on-list {
+            border-color: var(--accent-green);
+            color: var(--accent-green);
+            background: rgba(34, 197, 94, 0.1);
+        }
+
+        .actions-cell {
+            display: flex;
+            gap: 6px;
+        }
+
+        /* ---- WHITELIST PANEL ---- */
+        .whitelist-panel {
+            display: none;
+        }
+
+        .whitelist-panel.active {
+            display: block;
+        }
+
+        .whitelist-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .whitelist-item-name {
+            font-family: var(--font-mono);
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .btn-remove {
+            padding: 4px 12px;
+            border: 1px solid var(--accent-red);
+            border-radius: 5px;
+            background: transparent;
+            color: var(--accent-red);
+            font-family: var(--font-mono);
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        .add-form {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .add-input {
+            flex: 1;
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg-card);
+            color: var(--text-primary);
+            font-family: var(--font-mono);
+            font-size: 13px;
+        }
+
+        .add-input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+        }
+
+        .btn-add {
+            padding: 10px 20px;
+            border: 1px solid var(--accent-green);
+            border-radius: 8px;
+            background: rgba(34, 197, 94, 0.1);
+            color: var(--accent-green);
+            font-family: var(--font-body);
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        /* ---- PROCESS TABLE CONTAINER ---- */
+        .table-container {
+            max-height: 520px;
+            overflow-y: auto;    /* Scrollbar when content overflows */
+            border: 1px solid var(--border);
+            border-radius: 10px;
+        }
+
+        /* Custom scrollbar styling (Chrome/Edge) */
+        .table-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        .table-container::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+        .table-container::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
+
+        /* ---- LOADING STATE ---- */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        /* ---- SEARCH BAR ---- */
+        .search-bar {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg-card);
+            color: var(--text-primary);
+            font-family: var(--font-mono);
+            font-size: 13px;
+            margin-bottom: 14px;
+        }
+        .search-bar:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+        }
+
+        /* ---- CATEGORY COLORS ---- */
+        .cat-communication { background: rgba(249,115,22,0.15); color: #f97316; }
+        .cat-browser       { background: rgba(59,130,246,0.15);  color: #3b82f6; }
+        .cat-cloud-sync    { background: rgba(6,182,212,0.15);   color: #06b6d4; }
+        .cat-media         { background: rgba(168,85,247,0.15);  color: #a855f7; }
+        .cat-creative      { background: rgba(236,72,153,0.15);  color: #ec4899; }
+        .cat-updater       { background: rgba(100,116,139,0.15); color: #94a3b8; }
+        .cat-assistant     { background: rgba(20,184,166,0.15);  color: #14b8a6; }
+        .cat-utility       { background: rgba(234,179,8,0.15);   color: #eab308; }
+        .cat-game-launcher { background: rgba(34,197,94,0.15);   color: #22c55e; }
+        .cat-gpu-overlay   { background: rgba(99,102,241,0.15);  color: #6366f1; }
+        .cat-gpu-service   { background: rgba(99,102,241,0.15);  color: #6366f1; }
+        .cat-streaming     { background: rgba(239,68,68,0.15);   color: #ef4444; }
+        .cat-system-critical { background: rgba(100,116,139,0.1); color: #64748b; }
+        .cat-unknown       { background: rgba(100,116,139,0.1);  color: #64748b; }
+
+        /* ---- RESPONSIVE (smaller screens) ---- */
+        @media (max-width: 768px) {
+            .stats-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .note-box {
+            background: rgba(59,130,246,0.08);
+            border: 1px solid rgba(59,130,246,0.25);
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 18px;
+            font-size: 13px;
+            color: var(--accent-blue);
+            line-height: 1.5;
+        }
+    </style>
+</head>
+
+<body>
+    <!--
+    ============================================================
+    HTML STRUCTURE
+    ============================================================
+    Each element (div, h1, table, button, etc.) is a building block.
+    'class' attributes connect elements to their CSS styles above.
+    'id' attributes let JavaScript find and manipulate specific elements.
+    'onclick' runs JavaScript when the element is clicked.
+    -->
+
+    <div class="app">
+        <!-- Header -->
+        <div class="header">
+            <h1>Game Optimizer</h1>
+            <div class="header-status" id="connection-status">Connecting...</div>
+        </div>
+
+        <!-- System Stats -->
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="stat-label">CPU Usage</div>
+                <div class="stat-value" id="cpu-value">--%</div>
+                <div class="stat-sub" id="cpu-sub">Measuring...</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">RAM Usage</div>
+                <div class="stat-value" id="ram-value">-- MB</div>
+                <div class="stat-sub" id="ram-sub">-- / -- GB</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Bloat Detected</div>
+                <div class="stat-value" id="bloat-count">--</div>
+                <div class="stat-sub" id="bloat-ram">-- MB reclaimable</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Freed</div>
+                <div class="stat-value" id="freed-value" style="color: var(--accent-green);">0 MB</div>
+                <div class="stat-sub" id="freed-sub">Activate Game Mode</div>
+            </div>
+        </div>
+
+        <!-- Game Mode Button -->
+        <div class="game-mode-section">
+            <button class="game-mode-btn" id="game-mode-btn" onclick="toggleGameMode()">
+                Activate Game Mode
+            </button>
+        </div>
+
+        <!-- Freed Resources Banner -->
+        <div class="freed-banner" id="freed-banner"></div>
+
+        <!-- Tab Navigation -->
+        <div class="tabs">
+            <button class="tab-btn active" id="tab-processes" onclick="switchTab('processes')">
+                Running Processes
+            </button>
+            <button class="tab-btn" id="tab-whitelist" onclick="switchTab('whitelist')">
+                Whitelist
+            </button>
+        </div>
+
+        <!-- Processes Tab -->
+        <div id="processes-panel">
+            <input type="text" class="search-bar" placeholder="Search processes..." 
+                   oninput="filterProcesses(this.value)" id="search-input">
+            
+            <div class="table-container">
+                <table class="process-table">
+                    <thead>
+                        <tr>
+                            <th>Process</th>
+                            <th>Category</th>
+                            <th>RAM</th>
+                            <th>CPU</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="process-tbody">
+                        <tr><td colspan="5" class="loading">Loading processes...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Whitelist Tab -->
+        <div class="whitelist-panel" id="whitelist-panel">
+            <div class="note-box">
+                Whitelisted processes are <strong>protected</strong> from Game Mode.
+                They will keep running when you activate Game Mode.
+            </div>
+            <div class="add-form">
+                <input type="text" class="add-input" id="whitelist-input" 
+                       placeholder="Process name (e.g., discord.exe)"
+                       onkeydown="if(event.key==='Enter') addToWhitelist()">
+                <button class="btn-add" onclick="addToWhitelist()">+ Add</button>
+            </div>
+            <div id="whitelist-list"></div>
+        </div>
+    </div>
+
+    <!--
+    ============================================================
+    JAVASCRIPT
+    ============================================================
+    This is where the interactivity lives. JavaScript:
+      - Fetches data from our Python server
+      - Updates the HTML with fresh data
+      - Handles button clicks
+      - Runs on a timer to keep things updated
+    
+    KEY CONCEPTS:
+      - 'fetch()' makes HTTP requests to our server API
+      - 'async/await' lets us wait for server responses
+      - 'document.getElementById()' finds HTML elements by their ID
+      - '.innerHTML' replaces the HTML content inside an element
+    -->
+    <script>
+        // ---- STATE ----
+        // These variables track the current state of our app.
+        // "State" = the data our UI is currently showing.
+        let allProcesses = [];
+        let whitelist = [];
+        let gameModeActive = false;
+        let searchFilter = "";
+
+        // ---- API HELPER ----
+        // This function makes HTTP requests to our Python server.
+        // It's "async" because network requests take time - we don't
+        // want to freeze the page while waiting for a response.
+        //
+        // WHAT IS async/await?
+        //   Normal code runs line by line, instantly.
+        //   But network requests take time (milliseconds to seconds).
+        //   'async' marks a function as "this might need to wait."
+        //   'await' says "pause here until this finishes."
+        //   The rest of the page keeps working while we wait.
+
+        async function api(endpoint, method = "GET", body = null) {
+            try {
+                const options = {
+                    method: method,
+                    headers: { "Content-Type": "application/json" },
+                };
+                
+                // Only include a body for POST/DELETE requests
+                if (body) {
+                    options.body = JSON.stringify(body);
+                }
+                
+                const response = await fetch(`http://localhost:8080${endpoint}`, options);
+                return await response.json();
+                
+            } catch (error) {
+                // If the server isn't running, we'll end up here
+                console.error("API Error:", error);
+                document.getElementById("connection-status").textContent = "Server offline";
+                document.getElementById("connection-status").style.color = "#ef4444";
+                return null;
+            }
+        }
+
+        // ---- LOAD DATA ----
+        // Fetches all the data we need and updates the page.
+        // This runs on a timer (every 3 seconds) to stay fresh.
+
+        async function loadData() {
+            // Fetch system info, processes, and whitelist in parallel
+            // Promise.all runs multiple requests AT THE SAME TIME
+            // instead of one after another. Much faster!
+            const [systemData, processData, whitelistData] = await Promise.all([
+                api("/api/system"),
+                api("/api/processes"),
+                api("/api/whitelist"),
+            ]);
+
+            if (systemData) {
+                updateSystemStats(systemData);
+            }
+            
+            if (processData) {
+                allProcesses = processData.processes;
+                updateBloatStats(processData.summary);
+                renderProcesses();
+            }
+            
+            if (whitelistData) {
+                whitelist = whitelistData.whitelist;
+                renderWhitelist();
+            }
+
+            // Update connection status
+            const status = document.getElementById("connection-status");
+            if (systemData) {
+                status.textContent = "Connected";
+                status.style.color = "#22c55e";
+            }
+        }
+
+        // ---- UPDATE UI FUNCTIONS ----
+
+        function updateSystemStats(data) {
+            document.getElementById("cpu-value").textContent = data.cpu_percent + "%";
+            document.getElementById("cpu-sub").textContent = 
+                data.cpu_percent > 80 ? "High load!" : "Normal";
+            
+            const ramGB = (data.ram_used_mb / 1024).toFixed(1);
+            const ramTotalGB = (data.ram_total_mb / 1024).toFixed(1);
+            document.getElementById("ram-value").textContent = data.ram_percent + "%";
+            document.getElementById("ram-sub").textContent = `${ramGB} / ${ramTotalGB} GB`;
+        }
+
+        function updateBloatStats(summary) {
+            document.getElementById("bloat-count").textContent = summary.bloat_count;
+            document.getElementById("bloat-ram").textContent = 
+                summary.bloat_ram_mb + " MB reclaimable";
+        }
+
+        // ---- RENDER PROCESS TABLE ----
+        // This rebuilds the entire process table HTML every time
+        // it's called. It filters by the search term and only shows
+        // "safe_to_kill" processes (bloat) by default.
+
+        function renderProcesses() {
+            const tbody = document.getElementById("process-tbody");
+            
+            // Filter processes
+            let filtered = allProcesses.filter(p => p.safe_to_kill);
+            
+            if (searchFilter) {
+                const term = searchFilter.toLowerCase();
+                filtered = allProcesses.filter(p => 
+                    p.name.toLowerCase().includes(term) ||
+                    p.category.toLowerCase().includes(term)
+                );
+            }
+            
+            // Sort by RAM usage (highest first)
+            filtered.sort((a, b) => b.ram_mb - a.ram_mb);
+            
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="loading">
+                    ${searchFilter ? "No matching processes" : "No bloat detected - nice!"}
+                </td></tr>`;
+                return;
+            }
+            
+            // Build HTML for each process row
+            // Template literals (backtick strings) let us embed variables with ${...}
+            let html = "";
+            for (const proc of filtered) {
+                const isWhitelisted = whitelist.some(
+                    w => w.toLowerCase() === proc.name.toLowerCase()
+                );
+                
+                // Convert category to a CSS class name
+                const catClass = "cat-" + proc.category.toLowerCase().replace(/[^a-z]/g, "-");
+                
+                html += `
+                <tr>
+                    <td class="process-name">${escapeHtml(proc.name)}</td>
+                    <td>
+                        <span class="category-badge ${catClass}">
+                            ${escapeHtml(proc.category)}
+                        </span>
+                    </td>
+                    <td class="process-stat">${proc.ram_mb} MB</td>
+                    <td class="process-stat">${proc.cpu_percent}%</td>
+                    <td class="actions-cell">
+                        ${proc.safe_to_kill ? `
+                            <button class="btn-kill" onclick="killProcess('${escapeHtml(proc.name)}')">
+                                Kill
+                            </button>
+                            <button class="btn-whitelist ${isWhitelisted ? 'on-list' : ''}" 
+                                    onclick="toggleWhitelist('${escapeHtml(proc.name)}')">
+                                ${isWhitelisted ? 'Protected' : 'Protect'}
+                            </button>
+                        ` : `
+                            <span style="color: var(--text-muted); font-size: 11px;">
+                                ${proc.category === 'System Critical' ? 'Protected' : '--'}
+                            </span>
+                        `}
+                    </td>
+                </tr>`;
+            }
+            
+            tbody.innerHTML = html;
+        }
+
+        // ---- SECURITY: Escape HTML ----
+        // This prevents "XSS attacks" where a process name could
+        // contain HTML/JavaScript that would execute in our page.
+        // Always escape user-controlled data before putting it in HTML!
+        function escapeHtml(str) {
+            const div = document.createElement("div");
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        // ---- PROCESS ACTIONS ----
+
+        async function killProcess(name) {
+            if (!confirm(`Kill all instances of ${name}?`)) return;
+            
+            const result = await api("/api/kill", "POST", { name });
+            if (result && result.success) {
+                // Refresh the process list
+                loadData();
+            } else if (result) {
+                alert(result.error);
+            }
+        }
+
+        async function toggleGameMode() {
+            gameModeActive = !gameModeActive;
+            const btn = document.getElementById("game-mode-btn");
+            
+            if (gameModeActive) {
+                if (!confirm("This will kill all non-whitelisted bloat processes. Continue?")) {
+                    gameModeActive = false;
+                    return;
+                }
+                
+                btn.classList.add("active");
+                btn.innerHTML = "Game Mode Active - Click to Deactivate";
+                
+                const result = await api("/api/gamemode", "POST", { activate: true });
+                if (result) {
+                    const banner = document.getElementById("freed-banner");
+                    banner.classList.add("visible");
+                    banner.textContent = 
+                        `Killed ${result.total_killed} processes | ` +
+                        `Freed ${result.ram_freed_mb} MB RAM | ` +
+                        `Freed ${result.cpu_freed_percent}% CPU`;
+                    
+                    document.getElementById("freed-value").textContent = 
+                        result.ram_freed_mb + " MB";
+                    document.getElementById("freed-sub").textContent = 
+                        result.total_killed + " processes killed";
+                    
+                    loadData();
+                }
+            } else {
+                btn.classList.remove("active");
+                btn.innerHTML = "Activate Game Mode";
+                document.getElementById("freed-banner").classList.remove("visible");
+                
+                await api("/api/gamemode", "POST", { activate: false });
+            }
+        }
+
+        // ---- WHITELIST MANAGEMENT ----
+
+        async function toggleWhitelist(name) {
+            const isWhitelisted = whitelist.some(
+                w => w.toLowerCase() === name.toLowerCase()
+            );
+            
+            if (isWhitelisted) {
+                await api("/api/whitelist", "DELETE", { name });
+            } else {
+                await api("/api/whitelist", "POST", { name });
+            }
+            
+            loadData();
+        }
+
+        async function addToWhitelist() {
+            const input = document.getElementById("whitelist-input");
+            const name = input.value.trim();
+            
+            if (!name) return;
+            
+            await api("/api/whitelist", "POST", { name });
+            input.value = "";
+            loadData();
+        }
+
+        async function removeFromWhitelist(name) {
+            await api("/api/whitelist", "DELETE", { name });
+            loadData();
+        }
+
+        function renderWhitelist() {
+            const container = document.getElementById("whitelist-list");
+            
+            if (whitelist.length === 0) {
+                container.innerHTML = `<div class="loading">No whitelisted processes. Add some above.</div>`;
+                return;
+            }
+            
+            let html = "";
+            for (const name of whitelist) {
+                html += `
+                <div class="whitelist-item">
+                    <span class="whitelist-item-name">${escapeHtml(name)}</span>
+                    <button class="btn-remove" onclick="removeFromWhitelist('${escapeHtml(name)}')">
+                        Remove
+                    </button>
+                </div>`;
+            }
+            container.innerHTML = html;
+        }
+
+        // ---- TAB SWITCHING ----
+        function switchTab(tab) {
+            document.getElementById("tab-processes").classList.toggle("active", tab === "processes");
+            document.getElementById("tab-whitelist").classList.toggle("active", tab === "whitelist");
+            document.getElementById("processes-panel").style.display = 
+                tab === "processes" ? "block" : "none";
+            document.getElementById("whitelist-panel").classList.toggle("active", tab === "whitelist");
+        }
+
+        // ---- SEARCH FILTERING ----
+        function filterProcesses(value) {
+            searchFilter = value;
+            renderProcesses();
+        }
+
+        // ---- STARTUP ----
+        // Load data immediately, then refresh every 3 seconds.
+        // setInterval runs a function repeatedly on a timer.
+        loadData();
+        setInterval(loadData, 3000);
+    </script>
+</body>
+</html>
